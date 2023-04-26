@@ -31,13 +31,12 @@ def purity(labels, ref_i, n_ref, n_dum):
     return n_i_dum_c / (n_dum + n_c - 1 - n_i_dum_c)
 
 
-def find_k_star(D, B_ref, B_ref_dum):
+def find_k_star(X, n_D, B_ref, B_ref_dum):
     # Training data: reference bloom filters, dummy bloom filters, and data records
-    X = B_ref + list(itertools.chain(*B_ref_dum)) + list(D)
     n_ref, n_dum = len(B_ref), len(B_ref_dum[0])
 
     max_purity, k_star = 0, 0
-    for k in range(1, len(D) + 1):
+    for k in range(1, n_D + 1):
         # Fit k-means with k clusters and get labels
         kmeans = KMeans(n_clusters=k, random_state=RANDOM_SEED, n_init="auto").fit(X)
 
@@ -83,14 +82,17 @@ def run():
     B_ref = [D.sample().item() for _ in range(n_ref)]  # Method B
     B_ref_dum = [[dummy(ref, p_flip) for _ in range(n_dum)] for ref in B_ref]
 
+    # Training data: reference bloom filters, dummy bloom filters, and data records
+    X = B_ref + list(itertools.chain(*B_ref_dum)) + list(D)
+
     # Get optimal k
-    k_star = find_k_star(D, B_ref, B_ref_dum)
+    k_star = find_k_star(X, len(D), B_ref, B_ref_dum)
 
     # Train k-means with optimal k
-    kmeans = KMeans(n_clusters=k_star, random_state=RANDOM_SEED, n_init="auto").fit(list(D))
+    kmeans = KMeans(n_clusters=k_star, random_state=RANDOM_SEED, n_init="auto").fit(X)
 
     # Add label column to dataset
-    df["label"] = kmeans.labels_
+    df["label"] = kmeans.labels_[n_ref + n_ref * n_dum :]
 
     # Save labeled dataset
     df[["id", "bf", "label"]].to_csv(fname.replace(".csv", "_labeled.csv"), index=False)
