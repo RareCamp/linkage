@@ -32,7 +32,6 @@ def purity(labels, ref_i, n_ref, n_dum):
 
 
 def find_k_star(X, n_D, B_ref, B_ref_dum):
-    # Training data: reference bloom filters, dummy bloom filters, and data records
     n_ref, n_dum = len(B_ref), len(B_ref_dum[0])
 
     max_purity, k_star = 0, 0
