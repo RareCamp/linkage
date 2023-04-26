@@ -63,8 +63,7 @@ def run():
     # Read input bloom filters
     df = pd.read_csv(fname, dtype="str")
 
-    # Check that CSV file has columns `id` and `bf`
-    assert "id" in df.columns, "CSV file doesn't have column `id`"
+    # Check that CSV file has column `bf`
     assert "bf" in df.columns, "CSV file doesn't have column `bf`"
 
     # Get bloom filter length and check that all bloom filters have the same length
