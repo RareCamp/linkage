@@ -5,7 +5,7 @@ Implementation of the Linkage algorithm that pairs with the Tokenizer
 
 Create a virtual environment:
 
-    python3.11 -m venv venv
+    python3 -m venv venv
 
 Activate virtual environment:
 
