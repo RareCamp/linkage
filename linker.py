@@ -51,7 +51,7 @@ def find_k_star(X, n_ref, n_dum, n_D):
     return k_star
 
 
-def run(l=500, k=20, eps=2, p_flip=0.2):
+def run(l=500, k=20, eps=2, p_flip=0.1):
     np.random.seed(RANDOM_SEED)
 
     fname = "voters.csv"
@@ -70,7 +70,7 @@ def run(l=500, k=20, eps=2, p_flip=0.2):
         ),
         axis=1,
     )
-    df = df.sort_values(by="first_name")
+    df = df.sort_values(by="id")
 
     if False:
         fname = "data/sample.csv"
@@ -134,4 +134,4 @@ def run(l=500, k=20, eps=2, p_flip=0.2):
 
 
 if __name__ == "__main__":
-    run(1000, eps=2)
+    run(1000, eps=10)
