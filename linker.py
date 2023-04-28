@@ -70,8 +70,8 @@ def run():
     D = df.bf.apply(lambda x: np.array(list(map(int, list(x)))))
 
     # Set parameters
-    n_ref = 20
-    n_dum = 20
+    n_ref = int(0.1*len(D) + 1)
+    n_dum = n_ref
     p_flip = 0.2
 
     # Generate reference and dummy bloom filters
