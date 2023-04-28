@@ -5,6 +5,8 @@ import pandas as pd
 from sklearn.cluster import KMeans
 
 
+from tokenizer import pii_tokenize
+
 RANDOM_SEED = 0
 
 
@@ -49,30 +51,49 @@ def find_k_star(X, n_ref, n_dum, n_D):
     return k_star
 
 
-def run():
+def run(l=500, k=20, eps=2, p_flip=0.2):
     np.random.seed(RANDOM_SEED)
 
-    fname = "data/sample.csv"
-    # fname = "data/data100.csv"
-    # fname = "data/data.csv"
-
-    # Read input bloom filters
+    fname = "voters.csv"
     df = pd.read_csv(fname, dtype="str")
+    df = pd.concat([df, df], ignore_index=True)
+    df["bf"] = df.apply(
+        lambda row: pii_tokenize(
+            l,
+            k,
+            eps,
+            row["first_name"],
+            row["middle_name"],
+            row["last_name"],
+            row["date_of_birth"],
+            row["gender"],
+        ),
+        axis=1,
+    )
+    df = df.sort_values(by="first_name")
+
+    if False:
+        fname = "data/sample.csv"
+        # fname = "data/data100.csv"
+        # fname = "data/data.csv"
+
+        # Read input bloom filters
+        df = pd.read_csv(fname, dtype="str")
 
     # Check that CSV file has column `bf`
     assert "bf" in df.columns, "CSV file doesn't have column `bf`"
 
     # Get bloom filter length and check that all bloom filters have the same length
     l = len(df.bf[0])
+    print("Bloom filter length:", l)
     assert all(df.bf.str.len() == l), "CSV file has different length of bloom filters"
 
     # Convert bloom filters to numpy arrays
     D = df.bf.apply(lambda x: np.array(list(map(int, list(x)))))
 
     # Set parameters
-    n_ref = int(0.1*len(D) + 1)
+    n_ref = int(0.1 * len(D) + 1)
     n_dum = n_ref
-    p_flip = 0.2
 
     # Generate reference and dummy bloom filters
     # B_ref = [np.random.randint(0, 2, l) for _ in range(n_ref)]  # Method A
@@ -94,14 +115,23 @@ def run():
     # Save labeled dataset
     df.to_csv(fname.replace(".csv", "_labeled.csv"), index=False)
 
+    # Print labeled dataset
     print(df)
 
     # Compute false positive and false negative rates
-    false_positives = sum(group.id.unique().size - 1 for _, group in df.groupby("label"))
-    false_negatives = sum(group.label.unique().size - 1 for _, group in df.groupby("id"))
-    print(f"False positives rate: {false_positives / len(df):.2f}")
-    print(f"False negatives rate: {false_negatives / len(df):.2f}")
+    false_positives = sum(
+        group.id.unique().size - 1 for _, group in df.groupby("label")
+    )
+    false_negatives = sum(
+        group.label.unique().size - 1 for _, group in df.groupby("id")
+    )
+    print(
+        f"False positives rate: {false_positives / len(df):.2f} (two unrelated patients with the same label)"
+    )
+    print(
+        f"False negatives rate: {false_negatives / len(df):.2f} (same patient with different labels)"
+    )
 
 
 if __name__ == "__main__":
-    run()
+    run(1000, eps=2)
