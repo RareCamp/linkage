@@ -76,7 +76,7 @@ def run():
 
     # Generate reference and dummy bloom filters
     # B_ref = [np.random.randint(0, 2, l) for _ in range(n_ref)]  # Method A
-    B_ref = [D.sample().item() for _ in range(n_ref)]  # Method B
+    B_ref = list(D.sample(n_ref))  # Method B
     B_ref_dum = [[dummy(ref, p_flip) for _ in range(n_dum)] for ref in B_ref]
 
     # Training data: reference bloom filters, dummy bloom filters, and data records
