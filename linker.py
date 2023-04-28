@@ -19,21 +19,19 @@ def purity(labels, ref_i, n_ref, n_dum):
     """
     Compute purity of the i-th reference bf cluster given all the labels
     """
-    # j-th dummy bf for i-th reference bf
-    dum_ij = lambda j: n_ref + ref_i * n_dum + j
+    # index of j-th dummy bf for i-th reference bf
+    dum_ij_index = lambda j: n_ref + ref_i * n_dum + j
 
     c = labels[ref_i]  # cluster of the i-th reference bf
     n_c = (labels == c).sum()  # number of records in c
 
-    # i-th ref dummy records in c
-    n_i_dum_c = (labels[dum_ij(0) : dum_ij(n_dum)] == c).sum()
+    # number of i-th ref dummy records in c
+    n_i_dum_c = (labels[dum_ij_index(0) : dum_ij_index(n_dum)] == c).sum()
 
     return n_i_dum_c / (n_dum + n_c - 1 - n_i_dum_c)
 
 
-def find_k_star(X, n_D, B_ref, B_ref_dum):
-    n_ref, n_dum = len(B_ref), len(B_ref_dum[0])
-
+def find_k_star(X, n_ref, n_dum, n_D):
     max_purity, k_star = 0, 0
     for k in range(1, n_D + 1):
         # Fit k-means with k clusters and get labels
@@ -85,7 +83,7 @@ def run():
     X = B_ref + list(itertools.chain(*B_ref_dum)) + list(D)
 
     # Get optimal k
-    k_star = find_k_star(X, len(D), B_ref, B_ref_dum)
+    k_star = find_k_star(X, n_ref, n_dum, len(D))
 
     # Train k-means with optimal k
     kmeans = KMeans(n_clusters=k_star, random_state=RANDOM_SEED, n_init="auto").fit(X)
