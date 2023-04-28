@@ -92,9 +92,15 @@ def run():
     df["label"] = kmeans.labels_[n_ref + n_ref * n_dum :]
 
     # Save labeled dataset
-    df[["id", "bf", "label"]].to_csv(fname.replace(".csv", "_labeled.csv"), index=False)
+    df.to_csv(fname.replace(".csv", "_labeled.csv"), index=False)
 
-    print(df[["id", "bf", "label"]])
+    print(df)
+
+    # Compute false positive and false negative rates
+    false_positives = sum(group.id.unique().size - 1 for _, group in df.groupby("label"))
+    false_negatives = sum(group.label.unique().size - 1 for _, group in df.groupby("id"))
+    print(f"False positives rate: {false_positives / len(df):.2f}")
+    print(f"False negatives rate: {false_negatives / len(df):.2f}")
 
 
 if __name__ == "__main__":
