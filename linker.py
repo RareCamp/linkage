@@ -1,3 +1,4 @@
+import collections
 import itertools
 
 import numpy as np
@@ -35,7 +36,7 @@ def purity(labels, ref_i, n_ref, n_dum):
 
 def find_k_star(X, n_ref, n_dum, n_D):
     max_purity, k_star = 0, 0
-    for k in range(1, n_D + 1):
+    for k in range(1, n_D + 1, 10):
         # Fit k-means with k clusters and get labels
         kmeans = KMeans(n_clusters=k, random_state=RANDOM_SEED, n_init="auto").fit(X)
 
@@ -51,34 +52,53 @@ def find_k_star(X, n_ref, n_dum, n_D):
     return k_star
 
 
-def run(l=500, k=20, eps=2, p_flip=0.1):
+def false_positives(df):
+    """
+    Find number of people who are wrongly matched to someone else
+    """
+    for label, g in df.groupby("label"):
+        if g.id.unique().size > 1:
+            print("\nFALSE POSITIVE:")
+            print(g)
+    return sum(len(g) for _, g in df.groupby("label") if g.id.unique().size > 1)
+
+
+def false_negatives(df):
+    """
+    Find number of records from the same person that are not matched
+    """
+    fns = 0
+    for _, group in df.groupby("id"):
+        main_cluster = collections.Counter(group["label"]).most_common(1)[0][0]
+        #print(f"main_cluster={main_cluster}")
+        if (group["label"] != main_cluster).sum() > 0:
+            print("\nFALSE NEGATIVE:")
+            print(group)
+        fns += (group["label"] != main_cluster).sum()
+    print(fns)
+    return fns
+
+
+def run(l=500, k=20, eps=2, p_flip=0.0):
     np.random.seed(RANDOM_SEED)
 
-    fname = "voters.csv"
+    fname = "ncvr_numrec_100_modrec_2_ocp_0.csv"
     df = pd.read_csv(fname, dtype="str")
-    df = pd.concat([df, df], ignore_index=True)
+    print(df)
     df["bf"] = df.apply(
         lambda row: pii_tokenize(
             l,
             k,
             eps,
             row["first_name"],
-            row["middle_name"],
             row["last_name"],
+            row["city"],
             row["date_of_birth"],
             row["gender"],
         ),
         axis=1,
     )
     df = df.sort_values(by="id")
-
-    if False:
-        fname = "data/sample.csv"
-        # fname = "data/data100.csv"
-        # fname = "data/data.csv"
-
-        # Read input bloom filters
-        df = pd.read_csv(fname, dtype="str")
 
     # Check that CSV file has column `bf`
     assert "bf" in df.columns, "CSV file doesn't have column `bf`"
@@ -118,20 +138,14 @@ def run(l=500, k=20, eps=2, p_flip=0.1):
     # Print labeled dataset
     print(df)
 
-    # Compute false positive and false negative rates
-    false_positives = sum(
-        group.id.unique().size - 1 for _, group in df.groupby("label")
-    )
-    false_negatives = sum(
-        group.label.unique().size - 1 for _, group in df.groupby("id")
-    )
-    print(
-        f"False positives rate: {false_positives / len(df):.2f} (two unrelated patients with the same label)"
-    )
-    print(
-        f"False negatives rate: {false_negatives / len(df):.2f} (same patient with different labels)"
-    )
+    # Print false positive and false negative rates
+    fpr = 100*false_positives(df) / len(df)
+    fnr = 100*false_negatives(df) / len(df)
+
+    print(f"\nk*: {k_star}")
+    print(f"False positive rate: {fpr:.2f} %")
+    print(f"False negative rate: {fnr:.2f} %")
 
 
 if __name__ == "__main__":
-    run(1000, eps=10)
+    run(l=1000, k=20, eps=100, p_flip=0.00)
